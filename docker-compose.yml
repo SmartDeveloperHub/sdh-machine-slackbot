@@ -1,0 +1,46 @@
+redis:
+  image: redis
+  hostname: redis
+  domainname: localdomain
+
+elasticsearch:
+  image: elasticsearch
+  hostname: elasticsearch
+  domainname: localdomain
+
+snapshotservice:
+  build: sdh-widget-snapshot-service
+  hostname: snapshotservice
+  domainname: localdomain
+  links:
+    - redis:redis
+  environment:
+    - TERM=xterm
+    - PORT=8888
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - PHANTOM_WORKERS=1
+    - PHANTOM_EXECUTORS_PER_WORKER=1
+    - PERSISTENCE_DIRECTORY=/home/persisted/
+    - SDH_API_URL
+  ports:
+    - 8888:8888
+
+slackbot:
+  build: sdh-slackbot
+  hostname: slackbot
+  domainname: localdomain
+  links:
+    - snapshotservice:snapshotservice
+    - elasticsearch:elasticsearch
+  environment:
+    - TERM=xterm
+    - FILE_LOG_PATH=./logs/sdh_log
+    - FILE_LOG_LEVEL=debug
+    - FILE_LOG_PERIOD=24
+    - FILE_LOG_NFILES=4
+    - SDH_DASHBOARD_URL=https://sdh.conwet.fi.upm.es/
+    - SEARCH_URL=http://elasticsearch:9200
+    - SDH_IMAGES_SERVICE=http://snapshotservice:8888
+    - SLACK_BOT_TOKEN
+    - SDH_API_URL
